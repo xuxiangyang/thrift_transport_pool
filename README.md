@@ -16,7 +16,7 @@ go get -u github.com/xuxiangyang/thrift_transport_pool
 
 ```
 // 定义一个pool，共享使用
-pool := thrift_transport_pool.NewPool(16, "127.0.0.1:3000", block func(hostPort string) (thrift.TTransport, error) {
+pool := thrift_transport_pool.NewPool(16, "127.0.0.1:3000", func(hostPort string) (thrift.TTransport, error) {
 	socket, err := thrift.NewTSocket(hostPort)
     if err != nil {
 		return nil, err
