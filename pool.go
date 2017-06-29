@@ -39,7 +39,7 @@ func (this *Pool) Pop() (thrift.TTransport, error) {
 
 	if this.createdCount < this.size {
 		this.createdCount += 1
-		return this.block(this.hostPort)
+		return NewRetryedTransport(this.hostPort, this.block)
 	}
 
 	select {
