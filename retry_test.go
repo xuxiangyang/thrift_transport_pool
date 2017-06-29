@@ -36,6 +36,20 @@ func Test_Read_with_retry(t *testing.T) {
 	}
 }
 
+func Test_Read_with_retry_with_other_errors(t *testing.T) {
+	f := func(hostPort string) (thrift.TTransport, error) {
+		return &MockTransport{Error: &MockTTransportException{}}, nil
+	}
+	rt, err := NewRetryedTransport("hostport", f)
+	if err != nil {
+		t.Fatal("should not fail with open")
+	}
+	_, err = rt.Read([]byte{})
+	if err == nil {
+		t.Fatal("should fail with read")
+	}
+}
+
 func Test_Wirte_with_retry(t *testing.T) {
 	rt := newRetryedTransport(t)
 	firstTransport := rt.Transport
@@ -49,15 +63,33 @@ func Test_Wirte_with_retry(t *testing.T) {
 }
 
 func Test_Open_with_retry(t *testing.T) {
-	rt := newRetryedTransport(t)
-	firstTransport := rt.Transport
-	err := rt.Open()
+	try_times := 0
+	f := func(hostPort string) (thrift.TTransport, error) {
+		defer func() { try_times += 1 }()
+		if try_times == 0 {
+			return &MockTransport{OpenError: &MockTTransportException{}}, nil
+		} else {
+			return &MockTransport{}, nil
+		}
+
+	}
+	rt, err := NewRetryedTransport("hostport", f)
 	if err != nil {
 		t.Fatal("should not fail")
 	}
 
-	if rt.Transport == firstTransport {
-		t.Fatal("Transport should change")
+	if !rt.IsOpen() {
+		t.Fatal("should auto open")
+	}
+}
+
+func Test_Open_with_retry_with_other_errors(t *testing.T) {
+	f := func(hostPort string) (thrift.TTransport, error) {
+		return &MockTransport{OpenError: &MockTTransportException{}}, nil
+	}
+	_, err := NewRetryedTransport("hostport", f)
+	if err == nil {
+		t.Fatal("should fail with open")
 	}
 }
 
@@ -77,7 +109,6 @@ func Test_Flush_with_retry(t *testing.T) {
 func newRetryedTransport(t *testing.T) *RetryedTransport {
 	try_times := 0
 	f := func(hostPort string) (thrift.TTransport, error) {
-		t.Log("sjk")
 		defer func() { try_times += 1 }()
 		if try_times == 0 {
 			return &MockTransport{Error: &MockTTransportException{}}, nil

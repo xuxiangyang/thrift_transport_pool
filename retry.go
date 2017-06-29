@@ -27,7 +27,8 @@ func NewRetryedTransport(hostPort string, block func(hostPort string) (thrift.TT
 		Block:     block,
 		HostPort:  hostPort,
 	}
-	return rt, nil
+
+	return rt, rt.Open()
 }
 
 func (this *RetryedTransport) Read(p []byte) (n int, err error) {
@@ -75,6 +76,10 @@ func (this *RetryedTransport) RemainingBytes() uint64 {
 }
 
 func (this *RetryedTransport) Open() (err error) {
+	if this.IsOpen() {
+		return nil
+	}
+
 	for i := 0; i < MAX_TRY_TIMES; i++ {
 		err = this.Transport.Open()
 		if !IsNeedRetryError(err) {
