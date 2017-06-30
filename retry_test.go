@@ -34,6 +34,10 @@ func Test_Read_with_retry(t *testing.T) {
 	if rt.Transport == firstTransport {
 		t.Fatal("Transport should change")
 	}
+
+	if !rt.Transport.IsOpen() {
+		t.Fatal("Transport should be open")
+	}
 }
 
 func Test_Read_with_retry_with_other_errors(t *testing.T) {
