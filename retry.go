@@ -55,17 +55,38 @@ func (this *RetryedTransport) Write(p []byte) (n int, err error) {
 	tmp := make([]byte, len(p))
 	copy(tmp, p)
 	this.buffer = append(this.buffer, tmp)
-	return this.Transport.Write(p)
+	for i := 0; i < MAX_TRY_TIMES; i++ {
+		n, err = this.Transport.Write(p)
+		if !IsNeedRetryError(err) {
+			return n, err
+		}
+		this.Reconnect()
+		for _, data := range this.buffer {
+			this.Transport.Write(data)
+		}
+		time.Sleep(time.Duration(i) * RETRY_DURATION)
+	}
+	return n, err
 }
 
 func (this *RetryedTransport) Close() error {
 	return this.Transport.Close()
 }
 
-func (this *RetryedTransport) Flush() error {
+func (this *RetryedTransport) Flush() (err error) {
 	this.oldBuffer = this.buffer
 	this.buffer = make([][]byte, 0)
-	return this.Transport.Flush()
+	for i := 0; i < MAX_TRY_TIMES; i++ {
+		err = this.Transport.Flush()
+		if !IsNeedRetryError(err) {
+			return err
+		}
+		for _, data := range this.oldBuffer {
+			this.Transport.Write(data)
+		}
+		time.Sleep(time.Duration(i) * RETRY_DURATION)
+	}
+	return err
 }
 
 func (this *RetryedTransport) RemainingBytes() uint64 {
