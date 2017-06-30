@@ -82,7 +82,6 @@ func (this *RetryedTransport) Open() (err error) {
 		if !IsNeedRetryError(err) {
 			return err
 		}
-		this.Reconnect()
 		time.Sleep(time.Duration(i) * RETRY_DURATION)
 	}
 	return err
@@ -98,14 +97,7 @@ func (this *RetryedTransport) Reconnect() (err error) {
 	if err != nil {
 		return err
 	}
-	for i := 0; i < MAX_TRY_TIMES; i++ {
-		err = this.Transport.Open()
-		if !IsNeedRetryError(err) {
-			return err
-		}
-		time.Sleep(time.Duration(i) * RETRY_DURATION)
-	}
-	return nil
+	return this.Open()
 }
 
 func IsNeedRetryError(err error) bool {

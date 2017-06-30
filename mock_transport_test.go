@@ -1,9 +1,9 @@
 package thrift_transport_pool
 
 type MockTransport struct {
-	OpenError error
-	Error     error
-	IsOpened  bool
+	Error    error
+	IsOpened bool
+	MockOpen func() error
 }
 
 func (this *MockTransport) Read(p []byte) (int, error) {
@@ -27,8 +27,19 @@ func (this *MockTransport) RemainingBytes() uint64 {
 }
 
 func (this *MockTransport) Open() error {
-	this.IsOpened = true
-	return this.OpenError
+	if this.MockOpen != nil {
+		err := this.MockOpen()
+		if err == nil {
+			this.IsOpened = true
+			return nil
+		} else {
+			return err
+		}
+	} else {
+		this.IsOpened = true
+		return nil
+	}
+
 }
 
 func (this *MockTransport) IsOpen() bool {

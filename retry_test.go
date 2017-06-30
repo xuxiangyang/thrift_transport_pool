@@ -55,18 +55,24 @@ func Test_Read_with_retry_with_other_errors(t *testing.T) {
 }
 
 func Test_Open_with_retry(t *testing.T) {
-	try_times := 0
+	openCount := 0
 	f := func(hostPort string) (thrift.TTransport, error) {
-		defer func() { try_times += 1 }()
-		if try_times == 0 {
-			return &MockTransport{OpenError: &MockTTransportException{}}, nil
-		} else {
-			return &MockTransport{}, nil
-		}
+		tr := &MockTransport{
+			MockOpen: func() error {
+				defer func() { openCount += 1 }()
+				if openCount == 0 {
+					return &MockTTransportException{}
+				} else {
+					return nil
+				}
 
+			},
+		}
+		return tr, nil
 	}
 	rt, err := NewRetryedTransport("hostport", f)
 	if err != nil {
+		t.Log(err)
 		t.Fatal("should not fail")
 	}
 
@@ -77,7 +83,7 @@ func Test_Open_with_retry(t *testing.T) {
 
 func Test_Open_with_retry_with_other_errors(t *testing.T) {
 	f := func(hostPort string) (thrift.TTransport, error) {
-		return &MockTransport{OpenError: &MockTTransportException{}}, nil
+		return &MockTransport{MockOpen: func() error { return &MockTTransportException{} }}, nil
 	}
 	_, err := NewRetryedTransport("hostport", f)
 	if err == nil {
