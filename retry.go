@@ -14,7 +14,8 @@ type RetryedTransport struct {
 	Transport thrift.TTransport
 	Block     func(hostPort string) (thrift.TTransport, error)
 	HostPort  string
-	buffer    []byte
+	buffer    [][]byte
+	oldBuffer [][]byte
 }
 
 func NewRetryedTransport(hostPort string, block func(hostPort string) (thrift.TTransport, error)) (*RetryedTransport, error) {
@@ -27,7 +28,8 @@ func NewRetryedTransport(hostPort string, block func(hostPort string) (thrift.TT
 		Transport: transport,
 		Block:     block,
 		HostPort:  hostPort,
-		buffer:    make([]byte, 0),
+		buffer:    make([][]byte, 0),
+		oldBuffer: make([][]byte, 0),
 	}
 
 	return rt, rt.Open()
@@ -41,14 +43,18 @@ func (this *RetryedTransport) Read(p []byte) (n int, err error) {
 		}
 		time.Sleep(RETRY_DURATION)
 		this.Reconnect()
-		this.Transport.Write(this.buffer)
+		for _, data := range this.oldBuffer {
+			this.Transport.Write(data)
+		}
 		this.Transport.Flush()
 	}
 	return n, err
 }
 
 func (this *RetryedTransport) Write(p []byte) (n int, err error) {
-	this.buffer = p
+	tmp := make([]byte, len(p))
+	copy(tmp, p)
+	this.buffer = append(this.buffer, tmp)
 	return this.Transport.Write(p)
 }
 
@@ -57,6 +63,8 @@ func (this *RetryedTransport) Close() error {
 }
 
 func (this *RetryedTransport) Flush() error {
+	this.oldBuffer = this.buffer
+	this.buffer = make([][]byte, 0)
 	return this.Transport.Flush()
 }
 
