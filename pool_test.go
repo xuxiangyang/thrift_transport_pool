@@ -15,7 +15,7 @@ func Test_Pop(t *testing.T) {
 	if err != nil {
 		t.Fatal("should pop")
 	}
-	if pool.createdCount != 1 {
+	if pool.CreatedCount != 1 {
 		t.Fatal("createdCount should eq 1")
 	}
 }
@@ -43,7 +43,7 @@ func Test_Push(t *testing.T) {
 		t.Fatal("should pop")
 	}
 	pool.Push(tr)
-	if len(pool.pool) != 1 {
+	if len(pool.Pool) != 1 {
 		t.Fatal("should push")
 	}
 }
