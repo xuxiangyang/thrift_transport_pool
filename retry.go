@@ -81,6 +81,7 @@ func (this *RetryedTransport) Flush() (err error) {
 		if !IsNeedRetryError(err) {
 			return err
 		}
+		this.Reconnect()
 		for _, data := range this.oldBuffer {
 			this.Transport.Write(data)
 		}
