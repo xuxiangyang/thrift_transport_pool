@@ -54,18 +54,6 @@ func Test_Read_with_retry_with_other_errors(t *testing.T) {
 	}
 }
 
-func Test_Wirte_with_retry(t *testing.T) {
-	rt := newRetryedTransport(t)
-	firstTransport := rt.Transport
-	_, err := rt.Write([]byte{})
-	if err != nil {
-		t.Fatal("should not fail")
-	}
-	if rt.Transport == firstTransport {
-		t.Fatal("Transport should change")
-	}
-}
-
 func Test_Open_with_retry(t *testing.T) {
 	try_times := 0
 	f := func(hostPort string) (thrift.TTransport, error) {
@@ -94,19 +82,6 @@ func Test_Open_with_retry_with_other_errors(t *testing.T) {
 	_, err := NewRetryedTransport("hostport", f)
 	if err == nil {
 		t.Fatal("should fail with open")
-	}
-}
-
-func Test_Flush_with_retry(t *testing.T) {
-	rt := newRetryedTransport(t)
-	firstTransport := rt.Transport
-	err := rt.Flush()
-	if err != nil {
-		t.Fatal("should not fail")
-	}
-
-	if rt.Transport == firstTransport {
-		t.Fatal("Transport should change")
 	}
 }
 

@@ -14,6 +14,7 @@ type RetryedTransport struct {
 	Transport thrift.TTransport
 	Block     func(hostPort string) (thrift.TTransport, error)
 	HostPort  string
+	buffer    []byte
 }
 
 func NewRetryedTransport(hostPort string, block func(hostPort string) (thrift.TTransport, error)) (*RetryedTransport, error) {
@@ -26,6 +27,7 @@ func NewRetryedTransport(hostPort string, block func(hostPort string) (thrift.TT
 		Transport: transport,
 		Block:     block,
 		HostPort:  hostPort,
+		buffer:    make([]byte, 0),
 	}
 
 	return rt, rt.Open()
@@ -37,38 +39,25 @@ func (this *RetryedTransport) Read(p []byte) (n int, err error) {
 		if !IsNeedRetryError(err) {
 			return n, err
 		}
-		this.Reconnect()
 		time.Sleep(RETRY_DURATION)
+		this.Reconnect()
+		this.Transport.Write(this.buffer)
+		this.Transport.Flush()
 	}
 	return n, err
 }
 
 func (this *RetryedTransport) Write(p []byte) (n int, err error) {
-	for i := 0; i < MAX_TRY_TIMES; i++ {
-		n, err = this.Transport.Write(p)
-		if !IsNeedRetryError(err) {
-			return n, err
-		}
-		this.Reconnect()
-		time.Sleep(RETRY_DURATION)
-	}
-	return n, err
+	this.buffer = p
+	return this.Transport.Write(p)
 }
 
 func (this *RetryedTransport) Close() error {
 	return this.Transport.Close()
 }
 
-func (this *RetryedTransport) Flush() (err error) {
-	for i := 0; i < MAX_TRY_TIMES; i++ {
-		err = this.Transport.Flush()
-		if !IsNeedRetryError(err) {
-			return err
-		}
-		this.Reconnect()
-		time.Sleep(RETRY_DURATION)
-	}
-	return err
+func (this *RetryedTransport) Flush() error {
+	return this.Transport.Flush()
 }
 
 func (this *RetryedTransport) RemainingBytes() uint64 {

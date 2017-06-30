@@ -11,7 +11,7 @@ func (this *MockTransport) Read(p []byte) (int, error) {
 }
 
 func (this *MockTransport) Write(p []byte) (int, error) {
-	return 0, this.Error
+	return 0, nil
 }
 
 func (this *MockTransport) Close() error {
@@ -19,7 +19,7 @@ func (this *MockTransport) Close() error {
 }
 
 func (this *MockTransport) Flush() error {
-	return this.Error
+	return nil
 }
 
 func (this *MockTransport) RemainingBytes() uint64 {
