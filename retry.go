@@ -41,12 +41,12 @@ func (this *RetryedTransport) Read(p []byte) (n int, err error) {
 		if !IsNeedRetryError(err) {
 			return n, err
 		}
-		time.Sleep(RETRY_DURATION)
 		this.Reconnect()
 		for _, data := range this.oldBuffer {
 			this.Transport.Write(data)
 		}
 		this.Transport.Flush()
+		time.Sleep(time.Duration(i) * RETRY_DURATION)
 	}
 	return n, err
 }
@@ -83,7 +83,7 @@ func (this *RetryedTransport) Open() (err error) {
 			return err
 		}
 		this.Reconnect()
-		time.Sleep(RETRY_DURATION)
+		time.Sleep(time.Duration(i) * RETRY_DURATION)
 	}
 	return err
 }
@@ -98,7 +98,14 @@ func (this *RetryedTransport) Reconnect() (err error) {
 	if err != nil {
 		return err
 	}
-	return this.Transport.Open()
+	for i := 0; i < MAX_TRY_TIMES; i++ {
+		err = this.Transport.Open()
+		if !IsNeedRetryError(err) {
+			return err
+		}
+		time.Sleep(time.Duration(i) * RETRY_DURATION)
+	}
+	return nil
 }
 
 func IsNeedRetryError(err error) bool {
