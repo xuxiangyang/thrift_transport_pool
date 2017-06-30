@@ -96,6 +96,7 @@ func (this *RetryedTransport) IsOpen() bool {
 }
 
 func (this *RetryedTransport) Reconnect() (err error) {
+	this.Transport.Close()
 	this.Transport, err = this.Block(this.HostPort)
 	return err
 }
