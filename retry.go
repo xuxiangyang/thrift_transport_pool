@@ -133,5 +133,10 @@ func IsNeedRetryError(err error) bool {
 		return true
 	}
 
+	_, ok = err.(thrift.TProtocolException)
+	if ok {
+		return true
+	}
+
 	return false
 }
